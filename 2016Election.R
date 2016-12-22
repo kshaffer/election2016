@@ -246,7 +246,6 @@ ggplot(data = electionExpenditureAnalysis) +
   coord_flip()
 
 # total trump/clinton expenditures
-# electors per citizen
 ggplot(data = electionExpenditureAnalysis) +
   geom_col(aes(x = state, 
                y = as.numeric(as.character(clintonExpTotal)) + as.numeric(as.character(trumpExpTotal)), 
