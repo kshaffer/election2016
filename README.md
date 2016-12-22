@@ -1,5 +1,6 @@
 # election2016
-State-by-state presidential election results, alongside population data from the 2010 census and electoral college makeup.
+
+State-by-state presidential election results, alongside population data from the 2010 census and electoral college makeup. Data comes from the Associated Press and Wikipedia. Only some states' results are official.
 
 Read more about this dataset, and analyses based on it, in the following blog posts:
 
