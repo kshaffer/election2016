@@ -183,12 +183,90 @@ write.csv(electionExpenditureAnalysis, '2016ElectionExpenditureAnalysis.csv', ro
 
 # visualizations
 
+# candidate spending by state
 ggplot(data = electionExpenditureAnalysis) +
-  geom_col(aes(x = postal, 
+  geom_col(aes(x = state, 
                y = as.numeric(as.character(clintonExpTotal)), 
+               fill = postal)) +
+  coord_flip() +
+  xlab('State') +
+  ylab('Dollars spent during 2016 presidential election')
+
+
+ggplot(data = electionExpenditureAnalysis) +
+  geom_col(aes(x = state, 
+               y = as.numeric(as.character(trumpExpTotal)), 
+               fill = postal)) +
+  coord_flip() +
+  xlab('State') +
+  ylab('Dollars spent during 2016 presidential election')
+
+# state populations
+ggplot(data = electionExpenditureAnalysis) +
+  geom_col(aes(x = state, 
+               y = population2010, 
                fill = postal)) +
   coord_flip()
 
+# electors per citizen
+ggplot(data = electionExpenditureAnalysis) +
+  geom_col(aes(x = state, 
+               y = electorsPerCitizen, 
+               fill = postal)) +
+  xlab('State') +
+  ylab('Electors per million citizens') +
+  coord_flip()
 
+# electors per voter in 2016
+ggplot(data = electionExpenditureAnalysis) +
+  geom_col(aes(x = state, 
+               y = electorsPerVoter, 
+               fill = postal)) +
+  xlab('State') +
+  ylab('Electors per million voters in 2016 presidential election') +
+  coord_flip()
 
+# voter turnout
+# electors per citizen
+ggplot(data = electionExpenditureAnalysis) +
+  geom_col(aes(x = state, 
+               y = voterTurnout, 
+               fill = postal)) +
+  xlab('State') +
+  ylab('Voter turnout (voters / all citizens)') +
+  coord_flip()
 
+# margin of victory
+ggplot(data = electionExpenditureAnalysis) +
+  geom_col(aes(x = state, 
+               y = marginOfVictoryPercent, 
+               fill = postal)) +
+  xlab('State') +
+  ylab('Margin of victory') +
+  coord_flip()
+
+# total trump/clinton expenditures
+# electors per citizen
+ggplot(data = electionExpenditureAnalysis) +
+  geom_col(aes(x = state, 
+               y = as.numeric(as.character(clintonExpTotal)) + as.numeric(as.character(trumpExpTotal)), 
+               fill = postal)) +
+  xlab('State') +
+  ylab('Total expenditures by Trump & Clinton in primary and general election') +
+  coord_flip()
+
+# correlations
+cor(as.numeric(as.character(electionExpenditureAnalysis$clintonExpTotal)) + as.numeric(as.character(electionExpenditureAnalysis$trumpExpTotal)),
+    electionExpenditureAnalysis$electors2016)
+cor(as.numeric(as.character(electionExpenditureAnalysis$clintonExpTotal)) + as.numeric(as.character(electionExpenditureAnalysis$trumpExpTotal)),
+    electionExpenditureAnalysis$electorsPerCitizen)
+cor(as.numeric(as.character(electionExpenditureAnalysis$clintonExpTotal)) + as.numeric(as.character(electionExpenditureAnalysis$trumpExpTotal)),
+    electionExpenditureAnalysis$electorsPerVoter)
+cor(as.numeric(as.character(electionExpenditureAnalysis$clintonExpTotal)) + as.numeric(as.character(electionExpenditureAnalysis$trumpExpTotal)),
+    electionExpenditureAnalysis$voterTurnout)
+
+# linear model
+fit <- lm(as.numeric(as.character(electionExpenditureAnalysis$clintonExpTotal)) + as.numeric(as.character(electionExpenditureAnalysis$trumpExpTotal)) ~
+          electionExpenditureAnalysis$electors2016 + 
+            electionExpenditureAnalysis$voterTurnout)
+summary(fit)
