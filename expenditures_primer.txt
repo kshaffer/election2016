@@ -1,0 +1,150 @@
+[updated 09/19/2012]
+
+PRESIDENTIAL MAP EXPENDITURE DATA FILE
+Federal Election Commission
+999 E Street, NW
+Washington, DC  20463
+
+DATA DESCRIPTION
+Presidential Map Expenditure Data File
+
+The zipped data file should be downloaded as binary and unzipped.
+
+Summary:
+The expenditure file contains operating expenditures made by the reporting committee.   This includes operating expenditures reported on Form 3P Line 23.
+
+Universe:  All individual contributions.
+
+Associated Files:
+
+Data File:  		CANDIDATEIDD-ALL.ZIP (example, P00000001D-ALL.ZIP)
+Data Dictionary:	EXPENDITURE_FORMAT.TXT
+
+The text file is comma delimited and uses double-quotation marks as the text qualifier.
+
+---------------------------------------------------------------
+CMTE_ID			COMMITTEE ID				S
+CAND_ID			CANDIDATE ID				S
+CAND_NM			CANDIDATE NAME				s
+RECIPIENT_NM		RECIPIENT NAME				S
+DISB_AMT		DISBURSEMENT AMOUNT			N
+DISB_DT			DISBURSEMENT DATE			D
+RECIPIENT_CITY		RECIPIENT CITY				S
+RECIPIENT_ST		RECIPIENT STATE				S
+RECIPIENT_ZIP		RECIPIENT ZIPE CODE			S
+DISB_DESC		DISBURSEMENT DESCRIPTION		S
+MEMO_CD			MEMO CODE				S
+MEMO_TEXT		MEMO TEXT				S
+FORM_TP			FORM TYPE				S
+FILE_NUM		FILE NUMBER				N
+TRAN_ID			TRANSACTION ID				S
+ELECTION_TP		ELECTION TYPE/PRIMARY GENERAL INDICATOR S
+
+Data Type:  S = string (alpha or alpha-numeric); D = date; N = numeric
+
+---------------------------------------------------------------
+
+Variable Documentation
+
+
+COMMITTEE ID
+String
+
+A 9-character alpha-numeric code assigned to a committee by the Federal Election Commission.
+
+---------
+CANDIDATE ID
+String
+
+A 9-character alpha-numeric code assigned to a candidate by the Federal Election Commission.
+
+---------
+CANDIDATE NAME
+String
+
+---------
+RECIPIENT NAME
+String
+
+Reported name of the recipient (payee).
+
+---------
+RECIPIENT CITY
+String
+
+Reported city of the recipient.
+
+---------
+RECIPIENT STATE
+String
+
+Reported state of the recipient.
+
+---------
+RECIPIENT ZIP CODE
+String
+
+Reported zip code of the recipient.
+
+---------
+DISBURSEMENT AMOUNT
+Numeric
+
+Reported disbursement amount.
+
+---------
+DISBURSEMENT DATE
+Date
+
+Reported disbursement date.  The date format is DD-MMM-YYYY.
+
+---------
+DISBURSEMENT DESCRIPTION
+String
+
+Additional information reported by the committee about a specific disbursment (purpose).
+
+---------
+MEMO CODE
+String
+
+'X' indicates the reporting committee has provided additional text to describe a specific disbursement.  See the MEMO TEXT.
+
+---------
+MEMO TEXT
+String
+
+Additional information reported by the committee about a specific disbursement.
+
+---------
+FORM TYPE
+Sting
+
+Indicates what schedule and line number the reporting committee reported a specific transaction.   SB23:  Form 3P  Schedule B Line 23.
+
+---------
+FILE NUMBER
+Numeric
+
+A unique number assigned to a report and all its associated transactions.
+Use the file number to link transactions to the report summaries (Form 3P) in REPORT_SUMMARIES_FORM_3P.ZIP on the FEC's FTP server.
+ftp://ftp.fec.gov/FEC/Presidential_Map/
+
+---------
+TRANSACTION ID
+String
+
+A unique identifier permanently associated with each itemization or transaction appearing in an FEC electronic file.
+
+---------
+ELECTION TYPE / PRIMARY-GENERAL INDICATOR
+String
+
+This code indicates the election for which the disbursement was made. EYYYY (election plus election year)
+P = Primary
+G = General
+O = Other
+C = Convention
+R = Runoff
+S = Special
+E = Recount

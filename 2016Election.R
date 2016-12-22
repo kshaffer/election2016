@@ -1,3 +1,5 @@
+library(ggplot2)
+
 # import and merge election and population/electoral college datasets
 electionOnly <- read.csv('2016ElectionResultsByState.csv')
 electoralCollege <- read.csv('2016ElectoralCollege.csv')
@@ -24,7 +26,7 @@ marginOfVictoryPercent <- abs((election$trumpVotes - election$clintonVotes) / el
 thirdParty <- election$johnsonVotes + election$steinVotes + election$mcmullinVotes + election$othersVotes
 
 # new data frame with all analytical parameters
-electionAnalysis = cbind(election, electorsPerCitizen, electorsPerVoter, voterTurnout, marginOfVictory, marginOfVictoryPercent, thirdParty)
+electionAnalysis <- cbind(election, electorsPerCitizen, electorsPerVoter, voterTurnout, marginOfVictory, marginOfVictoryPercent, thirdParty)
 write.csv(electionAnalysis, '2016ElectionAnalysis.csv')
 
 # list states where third party votes exceed margin of victory
@@ -80,3 +82,137 @@ model <- lm(electionAnalysis$electorsPerCitizen ~
               electionAnalysis$population2010 + 
               electionAnalysis$marginOfVictoryPercent)
 summary(model)
+
+# import expenditures data
+
+spend <- data.frame()
+spend <- read.csv('expenditures.csv')
+spendVA <- spend[spend$recipient_st=='VA',]
+spendTrump <- spend[spend$cand_nm == 'Trump, Donald J.',]
+spendClinton <- spend[spend$cand_nm == 'Clinton, Hillary Rodham',]
+
+# list of states
+states <- sort(unique(spend$recipient_st))
+
+stateTotal <- function(state, candidate, election = 'G2016') {
+  if (is.na(election)) {
+    electionSpend <- spend
+  } else {
+    electionSpend <- spend[spend$election_tp==election,]
+  }
+  candSpend <- electionSpend[electionSpend$cand_nm==candidate,]
+  stateSpend <- candSpend[candSpend$recipient_st==state,]
+  return(sum(stateSpend$disb_amt))
+}
+
+# trump by state - overall
+total <- sapply(states, stateTotal, 'Trump, Donald J.', election = NA)
+trumpByState <- data.frame()
+trumpByState <- cbind(as.character(states), total)
+colnames(trumpByState) <- c('state', 'trumpExpTotal')
+
+# trump by state - primary
+total <- sapply(states, stateTotal, 'Trump, Donald J.', election = 'P2016')
+trumpByStatePrimary <- data.frame()
+trumpByStatePrimary <- cbind(as.character(states), total)
+colnames(trumpByStatePrimary) <- c('state', 'trumpExpPrimary')
+
+# trump by state - general
+total <- sapply(states, stateTotal, 'Trump, Donald J.', election = 'G2016')
+trumpByStateGeneral <- data.frame()
+trumpByStateGeneral <- cbind(as.character(states), total)
+colnames(trumpByStateGeneral) <- c('state', 'trumpExpGeneral')
+
+# clinton by state - overall
+total <- sapply(states, stateTotal, 'Clinton, Hillary Rodham', election = NA)
+clintonByState <- data.frame()
+clintonByState <- cbind(as.character(states), total)
+colnames(clintonByState) <- c('state', 'clintonExpTotal')
+
+# clinton by state - primary
+total <- sapply(states, stateTotal, 'Clinton, Hillary Rodham', election = 'P2016')
+clintonByStatePrimary <- data.frame()
+clintonByStatePrimary <- cbind(as.character(states), total)
+colnames(clintonByStatePrimary) <- c('state', 'clintonExpPrimary')
+
+# clinton by state - general
+total <- sapply(states, stateTotal, 'Clinton, Hillary Rodham', election = 'G2016')
+clintonByStateGeneral <- data.frame()
+clintonByStateGeneral <- cbind(as.character(states), total)
+colnames(clintonByStateGeneral) <- c('state', 'clintonExpGeneral')
+
+# merge electionAnalysis with expenditures info
+expendituresTrump <- merge(trumpByStateGeneral,
+                           trumpByStatePrimary,
+                           by.x = 'state',
+                           by.y = 'state',
+                           all = TRUE)
+
+expendituresClinton <- merge(clintonByStateGeneral,
+                             clintonByStatePrimary,
+                             by.x = 'state',
+                             by.y = 'state',
+                             all = TRUE)
+
+expendituresTotal <- merge(trumpByState,
+                           clintonByState,
+                           by.x = 'state',
+                           by.y = 'state',
+                           all = TRUE)
+
+expendituresBoth <- merge(expendituresClinton,
+                          expendituresTrump,
+                          by.x = 'state',
+                          by.y = 'state',
+                          all = TRUE)
+
+expenditures <- merge(expendituresBoth,
+                      expendituresTotal,
+                      by.x = 'state',
+                      by.y = 'state',
+                      all = TRUE)
+
+electionExpenditureAnalysis <- merge(electionAnalysis,
+                                     expenditures,
+                                     by.x = 'postal',
+                                     by.y = 'state',
+                                     all.x = TRUE,
+                                     all.y = FALSE)
+
+write.csv(electionExpenditureAnalysis, '2016ElectionExpenditureAnalysis.csv', row.names = FALSE)
+
+# some plots and calculations
+
+# total spending by candidate
+aggregate(spend$disb_amt, by=list(Category=spend$cand_nm), FUN=sum)
+aggregate(spendVA$disb_amt, by=list(Category=spendVA$cand_nm), FUN=sum)
+
+# general election
+ggplot(data = spendClinton[spendClinton$election_tp=='G2016',]) +
+  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
+  coord_flip()
+
+# primary election
+ggplot(data = spendClinton[spendClinton$election_tp=='P2016',]) +
+  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
+  coord_flip()
+
+# general election
+ggplot(data = spendTrump[spendTrump$election_tp=='G2016',]) +
+  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
+  coord_flip()
+
+# primary election
+ggplot(data = spendTrump[spendTrump$election_tp=='P2016',]) +
+  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
+  coord_flip()
+
+# total
+ggplot(data = spendTrump) +
+  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
+  coord_flip()
+
+ggplot(data = spendClinton) +
+  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
+  coord_flip()
+
