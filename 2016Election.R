@@ -181,38 +181,14 @@ electionExpenditureAnalysis <- merge(electionAnalysis,
 
 write.csv(electionExpenditureAnalysis, '2016ElectionExpenditureAnalysis.csv', row.names = FALSE)
 
-# some plots and calculations
+# visualizations
 
-# total spending by candidate
-aggregate(spend$disb_amt, by=list(Category=spend$cand_nm), FUN=sum)
-aggregate(spendVA$disb_amt, by=list(Category=spendVA$cand_nm), FUN=sum)
-
-# general election
-ggplot(data = spendClinton[spendClinton$election_tp=='G2016',]) +
-  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
+ggplot(data = electionExpenditureAnalysis) +
+  geom_col(aes(x = postal, 
+               y = as.numeric(as.character(clintonExpTotal)), 
+               fill = postal)) +
   coord_flip()
 
-# primary election
-ggplot(data = spendClinton[spendClinton$election_tp=='P2016',]) +
-  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
-  coord_flip()
 
-# general election
-ggplot(data = spendTrump[spendTrump$election_tp=='G2016',]) +
-  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
-  coord_flip()
 
-# primary election
-ggplot(data = spendTrump[spendTrump$election_tp=='P2016',]) +
-  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
-  coord_flip()
-
-# total
-ggplot(data = spendTrump) +
-  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
-  coord_flip()
-
-ggplot(data = spendClinton) +
-  geom_col(aes(x = recipient_st, y = sum(disb_amt), color = recipient_st)) +
-  coord_flip()
 
