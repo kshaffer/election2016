@@ -1,4 +1,13 @@
 library(ggplot2)
+library(jsonlite)
+library(tidyverse)
+library(tidytext)
+library(stringr)
+library(scales)
+library(tidyjson)
+library(purrr)
+library(lubridate)
+library(broom)
 
 # import and merge election and population/electoral college datasets
 electionOnly <- read.csv('2016ElectionResultsByState.csv')
@@ -264,8 +273,72 @@ cor(as.numeric(as.character(electionExpenditureAnalysis$clintonExpTotal)) + as.n
 cor(as.numeric(as.character(electionExpenditureAnalysis$clintonExpTotal)) + as.numeric(as.character(electionExpenditureAnalysis$trumpExpTotal)),
     electionExpenditureAnalysis$voterTurnout)
 
-# linear model
-fit <- lm(as.numeric(as.character(electionExpenditureAnalysis$clintonExpTotal)) + as.numeric(as.character(electionExpenditureAnalysis$trumpExpTotal)) ~
-          electionExpenditureAnalysis$electors2016 + 
-            electionExpenditureAnalysis$voterTurnout)
-summary(fit)
+# various comparative visualizations
+
+electionExpenditureAnalysis %>%
+  filter(postal != 'DC') %>%
+ggplot(aes(trumpExpTotal, clintonVotes)) +
+  geom_point() +
+  geom_smooth()
+
+electionExpenditureAnalysis %>%
+  #filter(!postal %in% c('VA', 'DC')) %>%
+  mutate(totalExp = clintonExpTotal + trumpExpTotal) %>%
+  mutate(state = reorder(state, totalExp)) %>%
+  ggplot(aes(state, totalExp)) +
+  geom_col() +
+  coord_flip()
+
+electionExpenditureAnalysis %>%
+  filter(postal != 'DC') %>%
+  mutate(totalExp = clintonExpTotal + trumpExpTotal) %>%
+  ggplot(aes(totalExp, electors2016)) +
+  geom_point() +
+  geom_smooth() +
+  xlab('Total expenditures (primary and general) by Trump and Clinton') +
+  ylab('Electors per state')
+
+electionExpenditureAnalysis %>%
+  filter(postal != 'DC') %>%
+  mutate(totalExp = clintonExpTotal + trumpExpTotal) %>%
+  ggplot(aes(totalExp, electorsPerCitizen)) +
+  geom_point() +
+  geom_smooth() +
+  xlab('Total expenditures (primary and general) by Trump and Clinton') +
+  ylab('Electors per citizen per state')
+
+electionExpenditureAnalysis %>%
+  filter(postal != 'DC') %>%
+  mutate(totalExp = clintonExpGeneral + trumpExpGeneral) %>%
+  ggplot(aes(totalExp, electorsPerCitizen)) +
+  geom_point() +
+  geom_smooth() +
+  xlab('Total expenditures (general election) by Trump and Clinton') +
+  ylab('Electors per citizen per state')
+
+electionExpenditureAnalysis %>%
+  ggplot(aes(marginOfVictoryPercent, electorsPerCitizen)) +
+  geom_point() +
+  geom_smooth() +
+  xlab('Margin of victory (percent)') +
+  ylab('Electors per citizen') +
+  ggtitle('How much is a vote worth? (2016 US presidential election)')
+
+electionExpenditureAnalysis %>%
+  filter(postal != 'DC') %>%
+  mutate(totalExp = clintonExpTotal + trumpExpTotal) %>%
+  ggplot(aes(totalExp, marginOfVictory)) +
+  geom_point() +
+  geom_smooth() +
+  xlab('Total expenditures (primary and general) by Trump and Clinton') +
+  ylab('Margin of victory (raw vote count)')
+
+electionExpenditureAnalysis %>%
+  filter(postal != 'DC') %>%
+  mutate(totalExp = clintonExpTotal + trumpExpTotal) %>%
+  ggplot(aes(totalExp, marginOfVictoryPercent)) +
+  geom_point() +
+  geom_smooth() +
+  xlab('Total expenditures (primary and general) by Trump and Clinton') +
+  ylab('Margin of victory (percent)')
+
