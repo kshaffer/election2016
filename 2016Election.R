@@ -94,11 +94,47 @@ summary(model)
 
 # import expenditures data
 
-spend <- data.frame()
-spend <- read.csv('expenditures.csv')
+spend <- read_csv('expenditures.csv')
 spendVA <- spend[spend$recipient_st=='VA',]
 spendTrump <- spend[spend$cand_nm == 'Trump, Donald J.',]
 spendClinton <- spend[spend$cand_nm == 'Clinton, Hillary Rodham',]
+
+candidate_spending <- spend %>%
+  group_by(cand_nm, recipient_st, election_tp) %>%
+  summarize(total = sum(disb_amt)) %>%
+  filter(election_tp %in% (c('P2016', 'G2016')),
+         cand_nm %in% c('Trump, Donald J.', 'Clinton, Hillary Rodham')) %>%
+  spread(election_tp, total) %>%
+  mutate(T2016 = sum(P2016, G2016, na.rm = TRUE)) 
+
+primary_spend_by_state <- candidate_spending %>%
+  select(cand_nm, recipient_st, P2016) %>%
+  filter(recipient_st %in% electionAnalysis$postal) %>%
+  spread(cand_nm, P2016) %>%
+  mutate(clintonExpPrimary = `Clinton, Hillary Rodham`,
+         trumpExpPrimary = `Trump, Donald J.`) %>%
+  select(recipient_st, clintonExpPrimary, trumpExpPrimary)
+
+general_spend_by_state <- candidate_spending %>%
+  select(cand_nm, recipient_st, G2016) %>%
+  filter(recipient_st %in% electionAnalysis$postal) %>%
+  spread(cand_nm, G2016) %>%
+  mutate(clintonExpGeneral = `Clinton, Hillary Rodham`,
+         trumpExpGeneral = `Trump, Donald J.`) %>%
+  select(recipient_st, clintonExpGeneral, trumpExpGeneral)
+
+total_spend_by_state <- candidate_spending %>%
+  select(cand_nm, recipient_st, T2016) %>%
+  filter(recipient_st %in% electionAnalysis$postal) %>%
+  spread(cand_nm, T2016) %>%
+  mutate(clintonExpTotal = `Clinton, Hillary Rodham`,
+         trumpExpTotal = `Trump, Donald J.`) %>%
+  select(recipient_st, clintonExpTotal, trumpExpTotal)
+
+spend_by_state <- primary_spend_by_state %>%
+  full_join(general_spend_by_state) %>%
+  full_join(total_spend_by_state) %>%
+  mutate(postal = recipient_st)
 
 # list of states
 states <- sort(unique(spend$recipient_st))
@@ -115,37 +151,37 @@ stateTotal <- function(state, candidate, election = 'G2016') {
 }
 
 # trump by state - overall
-total <- sapply(states, stateTotal, 'Trump, Donald J.', election = NA)
+total <- sapply(states, stateTotal, 'Trump, Donald J.', election_tp = NA)
 trumpByState <- data.frame()
 trumpByState <- cbind(as.character(states), total)
 colnames(trumpByState) <- c('state', 'trumpExpTotal')
 
 # trump by state - primary
-total <- sapply(states, stateTotal, 'Trump, Donald J.', election = 'P2016')
+total <- sapply(states, stateTotal, 'Trump, Donald J.', election_tp = 'P2016')
 trumpByStatePrimary <- data.frame()
 trumpByStatePrimary <- cbind(as.character(states), total)
 colnames(trumpByStatePrimary) <- c('state', 'trumpExpPrimary')
 
 # trump by state - general
-total <- sapply(states, stateTotal, 'Trump, Donald J.', election = 'G2016')
+total <- sapply(states, stateTotal, 'Trump, Donald J.', election_tp = 'G2016')
 trumpByStateGeneral <- data.frame()
 trumpByStateGeneral <- cbind(as.character(states), total)
 colnames(trumpByStateGeneral) <- c('state', 'trumpExpGeneral')
 
 # clinton by state - overall
-total <- sapply(states, stateTotal, 'Clinton, Hillary Rodham', election = NA)
+total <- sapply(states, stateTotal, 'Clinton, Hillary Rodham', election_tp = NA)
 clintonByState <- data.frame()
 clintonByState <- cbind(as.character(states), total)
 colnames(clintonByState) <- c('state', 'clintonExpTotal')
 
 # clinton by state - primary
-total <- sapply(states, stateTotal, 'Clinton, Hillary Rodham', election = 'P2016')
+total <- sapply(states, stateTotal, 'Clinton, Hillary Rodham', election_tp = 'P2016')
 clintonByStatePrimary <- data.frame()
 clintonByStatePrimary <- cbind(as.character(states), total)
 colnames(clintonByStatePrimary) <- c('state', 'clintonExpPrimary')
 
 # clinton by state - general
-total <- sapply(states, stateTotal, 'Clinton, Hillary Rodham', election = 'G2016')
+total <- sapply(states, stateTotal, 'Clinton, Hillary Rodham', election_tp = 'G2016')
 clintonByStateGeneral <- data.frame()
 clintonByStateGeneral <- cbind(as.character(states), total)
 colnames(clintonByStateGeneral) <- c('state', 'clintonExpGeneral')
@@ -181,14 +217,17 @@ expenditures <- merge(expendituresBoth,
                       by.y = 'state',
                       all = TRUE)
 
-electionExpenditureAnalysis <- merge(electionAnalysis,
-                                     expenditures,
-                                     by.x = 'postal',
-                                     by.y = 'state',
-                                     all.x = TRUE,
-                                     all.y = FALSE)
+# electionExpenditureAnalysis <- merge(electionAnalysis,
+#                                      expenditures,
+#                                      by.x = 'postal',
+#                                      by.y = 'state',
+#                                      all.x = TRUE,
+#                                      all.y = FALSE)
 
-write.csv(electionExpenditureAnalysis, '2016ElectionExpenditureAnalysis.csv', row.names = FALSE)
+electionExpenditureAnalysis <- electionAnalysis %>%
+  full_join(spend_by_state)
+
+write_csv(electionExpenditureAnalysis, '2016ElectionExpenditureAnalysis.csv')
 
 # visualizations
 
@@ -218,41 +257,124 @@ ggplot(data = electionExpenditureAnalysis) +
   coord_flip()
 
 # electors per citizen
-ggplot(data = electionExpenditureAnalysis) +
-  geom_col(aes(x = state, 
-               y = electorsPerCitizen, 
-               fill = postal)) +
-  xlab('State') +
-  ylab('Electors per million citizens') +
-  coord_flip()
+electionExpenditureAnalysis %>%
+  mutate(state = reorder(state, electorsPerCitizen)) %>%
+  ggplot() +
+    geom_col(aes(x = state, 
+                 y = electorsPerCitizen, 
+                 fill = state)) +
+    xlab('State') +
+    ylab(paste('Electors per million citizens')) +
+    ggtitle('A citizen\'s share of the electoral college, by state') +
+    theme(legend.position="none") +
+    coord_flip()
 
 # electors per voter in 2016
-ggplot(data = electionExpenditureAnalysis) +
-  geom_col(aes(x = state, 
-               y = electorsPerVoter, 
-               fill = postal)) +
-  xlab('State') +
-  ylab('Electors per million voters in 2016 presidential election') +
-  coord_flip()
+electionExpenditureAnalysis %>%
+  mutate(state = reorder(state, electorsPerVoter)) %>%
+  ggplot() +
+    geom_col(aes(x = state, 
+                 y = electorsPerVoter, 
+                 fill = state)) +
+    xlab('State') +
+    ylab(paste('Electors per million votes')) +
+    ggtitle('A vote\'s share of the electoral college, by state') +
+    theme(legend.position="none") +
+    coord_flip()
 
 # voter turnout
 # electors per citizen
-ggplot(data = electionExpenditureAnalysis) +
+electionExpenditureAnalysis %>%
+  mutate(state = reorder(state, voterTurnout)) %>%
+  ggplot() +
   geom_col(aes(x = state, 
                y = voterTurnout, 
-               fill = postal)) +
+               fill = state)) +
   xlab('State') +
-  ylab('Voter turnout (voters / all citizens)') +
+  ylab(paste('Voter turnout (votes / citizens)')) +
+  ggtitle('Voter turnout') +
+  theme(legend.position="none") +
   coord_flip()
 
 # margin of victory
-ggplot(data = electionExpenditureAnalysis) +
+electionExpenditureAnalysis %>%
+  mutate(state = reorder(state, -marginOfVictoryPercent)) %>%
+  ggplot() +
+    geom_col(aes(x = state, 
+                 y = marginOfVictoryPercent, 
+                 fill = state)) +
+    xlab('State') +
+    ylab(paste('Margin of victory (percent of vote)')) +
+    ggtitle('Margin of victory, by state') +
+    theme(legend.position="none") +
+    coord_flip()
+
+electionExpenditureAnalysis %>%
+  mutate(state = reorder(state, -marginOfVictory)) %>%
+  ggplot() +
   geom_col(aes(x = state, 
-               y = marginOfVictoryPercent, 
-               fill = postal)) +
+               y = marginOfVictory, 
+               fill = state)) +
   xlab('State') +
-  ylab('Margin of victory') +
+  ylab(paste('Margin of victory (raw vote count)')) +
+  ggtitle('Margin of victory, by state') +
+  theme(legend.position="none") +
   coord_flip()
+
+electionExpenditureAnalysis %>%
+  mutate(expTotal = as.numeric(clintonExpTotal) + as.numeric(trumpExpTotal),
+    state = reorder(state, expTotal)) %>%
+  ggplot() +
+  geom_col(aes(x = state, 
+               y = expTotal, 
+               fill = state)) +
+  xlab('State') +
+  ylab('Total campaign expenditures through Dec 31, 2016') +
+  ggtitle('Campaign expenditures, by state') +
+  theme(legend.position="none") +
+  coord_flip()
+
+electionExpenditureAnalysis %>%
+  mutate(expTotal = as.numeric(clintonExpGeneral) + as.numeric(trumpExpGeneral),
+         state = reorder(state, expTotal)) %>%
+  ggplot() +
+  geom_col(aes(x = state, 
+               y = expTotal, 
+               fill = state)) +
+  xlab('State') +
+  ylab('General election campaign expenditures through Dec 31, 2016') +
+  ggtitle('Campaign expenditures, by state') +
+  theme(legend.position="none") +
+  coord_flip()
+
+# 2D: margin of victory * number of electors
+electionExpenditureAnalysis %>%
+  #filter(!postal %in% c('CA', 'NY', 'TX')) %>%
+  ggplot(aes(x = electors2016, 
+             y = marginOfVictory, 
+             color = postal)) +
+  geom_jitter() +
+  geom_text(aes(label = postal), check_overlap = TRUE, vjust = 1.5) +
+  xlab('Number of electors') +
+  ylab(paste('Margin of victory (raw vote count)')) +
+  ggtitle('Margin of victory (raw) vs. number of electors') +
+  theme(legend.position="none") +
+  coord_flip()
+
+# 2D: margin of victory * turnout
+electionExpenditureAnalysis %>%
+  ggplot(aes(x = as.numeric(voterTurnout), 
+             y = as.numeric(marginOfVictory), 
+             color = postal)) +
+  geom_jitter() +
+  geom_text(aes(label = postal), check_overlap = TRUE, vjust = 1.5) +
+  geom_smooth() +
+  xlab('Voter turnout (votes / citizens)') +
+  ylab(paste('Margin of victory (raw vote count)')) +
+  ggtitle('Margin of victory (raw) vs. voter turnout') +
+  theme(legend.position="none")
+
+
 
 # total trump/clinton expenditures
 ggplot(data = electionExpenditureAnalysis) +
