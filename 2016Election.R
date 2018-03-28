@@ -5,9 +5,7 @@ library(tidytext)
 library(stringr)
 library(scales)
 library(tidyjson)
-library(purrr)
 library(lubridate)
-library(broom)
 
 # import and merge election and population/electoral college datasets
 electionOnly <- read.csv('2016ElectionResultsByState.csv')
